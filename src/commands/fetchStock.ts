@@ -1,5 +1,5 @@
 import dayjs, { Dayjs } from 'dayjs';
-import { loadConfiguration, AppConfig } from '../utils/config';
+import { AppConfig, fetchCachedConfig } from '../utils/config';
 import { createLogger } from '../utils/logger';
 import { CacheFactory } from '../services/cache/cacheFactory';
 import { DateRange, StockDataPoint } from '../services/cache/ICache';
@@ -17,7 +17,6 @@ interface FetchStockOptions {
   cachePolicy: 'use' | 'ignore' | 'refresh';
   plan: boolean;
   yes: boolean;
-  silent: boolean;
 }
 
 export interface ValidatedStockRequest {
@@ -43,7 +42,7 @@ export interface ValidatedStockRequest {
 export const fetchStockCommand = async (options: FetchStockOptions) => {
   const logger = createLogger('fetch stock');
   try {
-    const userConfig = await loadConfiguration();
+    const userConfig = await fetchCachedConfig();
 
     const request = validateAndBuildRequest(options, userConfig);
 
@@ -124,10 +123,8 @@ export const fetchStockCommand = async (options: FetchStockOptions) => {
     const output: IOutput = OutputFactory.create(request.output.format);
     await output.write(finalData, { path: request.output.path });
     
-    if (!options.silent) {
-      logger.info('✅ Fetch stock data command executed successfully.');
-      logger.info('(Simulated run complete with new cache logic)');
-    }
+    logger.info('✅ Fetch stock data command executed successfully.');
+    logger.info('(Simulated run complete with new cache logic)');
 
   } catch (error) {
     logger.error(`❌ Error fetching stock data: ${(error as Error).message}`);

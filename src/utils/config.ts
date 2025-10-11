@@ -1,6 +1,6 @@
-import { createLogger, LogLevel } from './logger';
+import { getLogLevelFromString, LogLevel } from './logger';
 
-import { cosmiconfig } from 'cosmiconfig';
+import { cosmiconfig, CosmiconfigResult } from 'cosmiconfig';
 import yaml from 'yaml';
 import path from 'path';
 import os from 'os';
@@ -24,6 +24,7 @@ export interface AppConfig {
     type?: 'sqlite' | 'in-memory' | 'flat-file' // | 'mysql' | 'postgres' | 'timescaledb' | 'redis';
     databasePath?: string;
   };
+  logLevel?: LogLevel;
 }
 
 const yamlLoader = (filepath: string, content: string) => {
@@ -58,28 +59,34 @@ let hasSearched = false;
  * Caches the result so it doesn't have to search the filesystem on subsequent calls.
  * @returns A promise that resolves to the loaded configuration object or null if not found.
  */
-export async function loadConfiguration(): Promise<AppConfig | null> {
-  if (hasSearched) {
-    return loadedConfig;
+export async function loadConfiguration(
+  options?: {
+    config?: string;
+    silent?: boolean;
+    verbose?: boolean;
+  }
+): Promise<AppConfig | null> {
+  if (hasSearched && !options?.config) {
+    return fetchCachedConfig();
   }
 
-  const logger = createLogger('config');
-
   try {
-    const result = await explorer.search();
+    let result: CosmiconfigResult;
+    if (options?.config) {
+      result = await explorer.load(options.config);
+    } else {
+      result = await explorer.search();
+    }
     hasSearched = true;
 
     let baseConfig: AppConfig = {};
 
     if (result && !result.isEmpty) {
-      console.log(`(Config) Configuration loaded from: ${result.filepath}`);
       baseConfig = result.config as AppConfig;
-    } else {
-      console.log('(Config) No configuration file found. Using environment variables and defaults.');
     }
 
     loadedConfig = applyEnvironmentVariableOverrides(baseConfig);
-  
+
     if (!loadedConfig.cache?.databasePath) {
       loadedConfig.cache = {
         ...loadedConfig.cache,
@@ -87,11 +94,27 @@ export async function loadConfiguration(): Promise<AppConfig | null> {
       };
     }
 
+    if (options?.silent) {
+      loadedConfig.logLevel = LogLevel.ERROR;
+    }
+
+    if (options?.verbose) {
+      loadedConfig.logLevel = LogLevel.DEBUG;
+    }
+
     return loadedConfig;
   } catch (error) {
-    logger.error(`❌ Error loading configuration: ${(error as Error).message}`);
+    console.error(`❌ Error loading configuration: ${(error as Error).message}`);
     process.exit(1);
   }
+}
+
+/**
+ * Synchronously retreives loaded config. Does not check that it exists.
+ * @returns The configuration object if it exists.
+ */
+export function fetchCachedConfig(): AppConfig | null {
+  return loadedConfig;
 }
 
 /**
@@ -102,8 +125,6 @@ export async function loadConfiguration(): Promise<AppConfig | null> {
  */
 function applyEnvironmentVariableOverrides(config: AppConfig): AppConfig {
   const newConfig = { ...config }; // Avoid mutating the original object
-
-  const logger = createLogger('config');
 
   // Helper to ensure nested objects exist before setting properties
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,43 +142,25 @@ function applyEnvironmentVariableOverrides(config: AppConfig): AppConfig {
   const providerFromEnv = process.env.FINA_DEFAULT_PROVIDER;
   if (providerFromEnv) {
     const defaults = ensurePath(newConfig, ['defaults']);
-    logger.debug(`(Config) Overriding default provider with FINA_DEFAULT_PROVIDER env var: "${providerFromEnv}"`);
     defaults.provider = providerFromEnv;
   }
 
   const alphaVantageKey = process.env.ALPHAVANTAGE_API_KEY;
   if (alphaVantageKey) {
     const providerConfig = ensurePath(newConfig, ['providers', 'alphaVantage']);
-    logger.debug('(Config) Found ALPHAVANTAGE_API_KEY environment variable.');
     providerConfig.apiKey = alphaVantageKey;
   }
 
   const polygonKey = process.env.POLYGON_API_KEY;
   if (polygonKey) {
     const providerConfig = ensurePath(newConfig, ['providers', 'polygon']);
-    logger.debug('(Config) Found POLYGON_API_KEY environment variable.');
     providerConfig.apiKey = polygonKey;
+  }
+
+  const loggingLevel = process.env.LOGGING_LEVEL;
+  if (loggingLevel) {
+    newConfig.logLevel = getLogLevelFromString(loggingLevel);
   }
   
   return newConfig;
-}
-
-export function getConfiguredLogLevel(): LogLevel {
-  // TODO: check command line args
-
-  const logLevelEnv = process.env.LOG_LEVEL?.toUpperCase();
-  switch (logLevelEnv) {
-    case 'DEBUG':
-      return LogLevel.DEBUG;
-    case 'INFO':
-      return LogLevel.INFO;
-    case 'WARN':
-      return LogLevel.WARN;
-    case 'ERROR':
-      return LogLevel.ERROR;
-  }
-
-  // TODO: check config file value
-
-  return LogLevel.INFO;
 }

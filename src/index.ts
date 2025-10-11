@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { fetchStockCommand } from './commands/fetchStock';
+import { setupCommand } from './commands/setupCommand';
 
 const program = new Command();
 
 program
   .name('fina')
   .description('A command-line interface (CLI) for financial analysis and data fetching.')
-  .version('0.1.0');
+  .version('0.1.0')
+  .option('-C, --config <path>', 'Specify a custom configuration file path')
+  .option('--silent', 'Suppress all non-error output')
+  .option('--verbose', 'Print detailed output');
 
 const fetchCmd = program.command('fetch')
   .description('Fetch financial data from various sources.');
@@ -23,8 +28,10 @@ fetchCmd.command('stock')
   .option('--cache-policy <policy>', 'Cache policy (use, ignore, refresh)', 'use')
   .option('--plan', 'Show the execution plan without running')
   .option('-y, --yes', 'Automatically answer yes to all prompts')
-  .option('--silent', 'Suppress all non-error output')
-  .action(fetchStockCommand)
+  .action(async (opts) => {
+    await setupCommand(opts);
+    await fetchStockCommand(opts);
+  })
   .addHelpText('after', `
 Examples:
   $ fina fetch stock -t AAPL -d -1y:0d
@@ -60,7 +67,8 @@ fetchCmd.command('options')
   .option('--plan', 'Show the execution plan without running')
   .option('-y, --yes', 'Automatically answer yes to all prompts')
   .option('--silent', 'Suppress all non-error output')
-  .action(fetchOptionsCommand)
+  // .action(fetchOptionsCommand)
+  .action(() => { throw new Error('Unimplemented.'); })
   .addHelpText('after', `
 Examples:
   $ fina fetch options -t SPY -d -1d -c --otm -e "<=30d"

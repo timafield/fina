@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import dayjs from 'dayjs';
-import { getConfiguredLogLevel } from './config';
+import { fetchCachedConfig } from './config';
 
 export enum LogLevel {
   DEBUG = 0,
@@ -9,13 +9,29 @@ export enum LogLevel {
   ERROR = 3,
 }
 
+export function getLogLevelFromString(loggingLevel: string): LogLevel {
+  switch (loggingLevel.toUpperCase()) {
+    case 'DEBUG':
+      return LogLevel.DEBUG;
+    case 'INFO':
+      return LogLevel.INFO;
+    case 'WARN':
+      return LogLevel.WARN;
+    case 'ERROR':
+      return LogLevel.ERROR;
+  }
+
+  return LogLevel.INFO;
+}
+
 export class Logger {
   private readonly prefix: string;
   private configuredLogLevel: LogLevel;
 
   constructor(prefix: string) {
     this.prefix = prefix;
-    this.configuredLogLevel = getConfiguredLogLevel();
+    const config = fetchCachedConfig();
+    this.configuredLogLevel = config?.logLevel ?? LogLevel.INFO;
   }
 
   public debug(message: string, context?: object): void {
