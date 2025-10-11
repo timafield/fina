@@ -9,7 +9,7 @@ export enum LogLevel {
   ERROR = 3,
 }
 
-class Logger {
+export class Logger {
   private readonly prefix: string;
   private configuredLogLevel: LogLevel;
 

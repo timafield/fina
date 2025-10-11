@@ -45,7 +45,7 @@ export class AlphaVantageProvider implements IDataProvider {
   async getHistory(request: ValidatedStockRequest): Promise<StockDataPoint[]> {
     let allData: StockDataPoint[] = [];
 
-    for (const ticker of request.tickers) {
+    for (const ticker of request.tickers.filter(t => request.ranges.get(t)?.length)) {
       if (this.rateLimitDelay > 0) {
         await delay(this.rateLimitDelay);
       }

@@ -2,7 +2,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { loadConfiguration, AppConfig } from '../utils/config';
 import { createLogger } from '../utils/logger';
 import { CacheFactory } from '../services/cache/cacheFactory';
-import { StockDataPoint } from '../services/cache/ICache';
+import { DateRange, StockDataPoint } from '../services/cache/ICache';
 import { ProviderFactory } from '../providers/providerFactory';
 import { IOutput } from '../services/output/IOutput';
 import { OutputFactory } from '../services/output/outputFactory';
@@ -32,6 +32,7 @@ export interface ValidatedStockRequest {
   };
   providerName: string;
   cachePolicy: 'use' | 'ignore' | 'refresh';
+  ranges: Map<string, DateRange[]>;
 }
 
 /**
@@ -56,14 +57,14 @@ export const fetchStockCommand = async (options: FetchStockOptions) => {
 
       const coverage = await cache.analyzeCacheCoverage(request);
 
-      if (coverage.cachedRanges.length > 0) {
-        logger.info('Cache Status: Found existing data. Only missing ranges will be fetched.');
+      if ([...coverage.missingRangesByTicker.values()].some((ranges) => ranges.length > 0)) {
+        logger.info('Cache Status: Found existing data. Missing ranges will attempt to be fetched.');
       } else {
         logger.info('Cache Status: No relevant data found in cache.');
       }
 
-      if (coverage.missingRanges.length > 0) {
-        const dataToFetch = { ...request, ranges: coverage.missingRanges };
+      if ([...coverage.missingRangesByTicker.values()].some((ranges) => ranges.length > 0)) {
+        const dataToFetch = { ...request, ranges: coverage.missingRangesByTicker };
         const provider = ProviderFactory.create(request.providerName, userConfig);
         const fetchPlan = await provider.planFetch(dataToFetch);
 
@@ -97,14 +98,14 @@ export const fetchStockCommand = async (options: FetchStockOptions) => {
       const coverage = await cache.analyzeCacheCoverage(request);
 
       let cachedData: StockDataPoint[] = [];
-      if (coverage.cachedRanges.length > 0) {
-        cachedData = await cache.getStockData(request);
+      if ([...coverage.missingRangesByTicker.values()].some((ranges) => ranges.length === 0)) {
+        cachedData = await cache.getStockData({ ...request, ranges: coverage.missingRangesByTicker });
       }
 
-      if (coverage.missingRanges.length > 0) {
-        logger.info(`Found ${coverage.missingRanges.length} missing range(s). Fetching from provider.`);
+      if ([...coverage.missingRangesByTicker.values()].some((ranges) => ranges.length > 0)) {
+        logger.info(`Found missing range(s). Fetching from provider.`);
 
-        const missingDataRequest = { ...request, startDate: coverage.missingRanges[0].startDate, endDate: coverage.missingRanges[0].endDate };
+        const missingDataRequest = { ...request, ranges: coverage.missingRangesByTicker };
 
         const provider = ProviderFactory.create(request.providerName, userConfig);
         const newData = await provider.getHistory(missingDataRequest);
@@ -160,6 +161,7 @@ function validateAndBuildRequest(
     output: { format: outputFormat, path: options.outputPath },
     providerName,
     cachePolicy: options.cachePolicy,
+    ranges: new Map(),
   };
 }
 

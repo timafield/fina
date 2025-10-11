@@ -29,9 +29,8 @@ export interface DateRange {
  * present in the cache and which parts are missing.
  */
 export interface CacheCoverage {
-  cachedRanges: DateRange[];
-  missingRanges: DateRange[];
-}
+  missingRangesByTicker: Map<string, DateRange[]>;
+};
 
 /**
  * Defines the contract for any cache implementation (e.g., SQLite, in-memory).
