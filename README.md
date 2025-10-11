@@ -1,4 +1,8 @@
-# Fina CLI
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Fina CLI Logo" width="200"/>
+</p>
+
+# Fina
 
 **Your Financial Data Swiss Army Knife for the Command Line.**
 

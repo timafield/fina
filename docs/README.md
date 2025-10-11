@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Fina CLI Logo" width="200"/>
+</p>
+
 # Fina CLI - Full Documentation
 
 Welcome to the comprehensive documentation for Fina CLI. This guide provides in-depth information on all commands, argument formats, configuration, and advanced features.
