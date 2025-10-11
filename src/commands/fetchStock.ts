@@ -4,6 +4,8 @@ import { createLogger } from '../utils/logger';
 import { CacheFactory } from '../services/cache/cacheFactory';
 import { StockDataPoint } from '../services/cache/ICache';
 import { ProviderFactory } from '../providers/providerFactory';
+import { IOutput } from '../services/output/IOutput';
+import { OutputFactory } from '../services/output/outputFactory';
 
 interface FetchStockOptions {
   ticker: string[];
@@ -80,15 +82,15 @@ export const fetchStockCommand = async (options: FetchStockOptions) => {
 
     if (request.cachePolicy === 'ignore') {
       logger.info('Cache policy is "ignore". Fetching all data from provider.');
-      // const provider = ProviderFactory.create(request.providerName);
-      // finalData = await provider.getHistory(request);
+      const provider = ProviderFactory.create(request.providerName, userConfig);
+      finalData = await provider.getHistory(request);
 
     } else if (request.cachePolicy === 'refresh') {
       logger.info('Cache policy is "refresh". Fetching all data and updating cache.');
-      // const provider = ProviderFactory.create(request.providerName);
-      // const freshData = await provider.getHistory(request);
-      // await cache.updateStockData(freshData); // Overwrite/update cache
-      // finalData = freshData;
+      const provider = ProviderFactory.create(request.providerName, userConfig);
+      const freshData = await provider.getHistory(request);
+      await cache.updateStockData(freshData);
+      finalData = freshData;
 
     } else {
       logger.info('Cache policy is "use". Checking cache for existing data.');
@@ -104,24 +106,22 @@ export const fetchStockCommand = async (options: FetchStockOptions) => {
 
         const missingDataRequest = { ...request, startDate: coverage.missingRanges[0].startDate, endDate: coverage.missingRanges[0].endDate };
 
-        // const provider = ProviderFactory.create(request.providerName);
-        // const newData = await provider.getHistory(missingDataRequest);
-        const newData: StockDataPoint[] = [];
+        const provider = ProviderFactory.create(request.providerName, userConfig);
+        const newData = await provider.getHistory(missingDataRequest);
 
         if (newData.length > 0) {
           await cache.updateStockData(newData);
         }
 
-        finalData = [...cachedData, ...newData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        finalData = [...cachedData, ...newData].sort((a, b) => dayjs(a.date).millisecond() - dayjs(b.date).millisecond());
       } else {
         logger.info('All requested data was found in the cache.');
         finalData = cachedData;
       }
     }
 
-    // 8. Write the final combined data to the destination
-    // const output: IOutput = OutputFactory.create(request.output.format);
-    // await output.write(finalData, { path: request.output.path });
+    const output: IOutput = OutputFactory.create(request.output.format);
+    await output.write(finalData, { path: request.output.path });
     
     if (!options.silent) {
       logger.info('✅ Fetch stock data command executed successfully.');
