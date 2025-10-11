@@ -37,12 +37,13 @@ const yamlLoader = (filepath: string, content: string) => {
 
 const explorer = cosmiconfig('fina', {
   searchPlaces: [
-    'package.json',
-    '.finarc',
-    '.finarc.json',
-    '.finarc.yaml',
-    '.finarc.yml',
-    'fina.config.js',
+    'package.json', // looks for "fina" property
+    '~/.finarc',
+    '~/.fina/config',
+    '~/.fina/config.json',
+    '~/.fina/config.yaml',
+    '~/.fina/config.yml',
+    '~/.fina/config.js',
   ],
   loaders: {
     '.yaml': yamlLoader,
