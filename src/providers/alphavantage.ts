@@ -1,31 +1,34 @@
-import { IDataProvider, OHLCV } from './IProvider';
-import axios from 'axios';
-import { ProviderName } from './providerFactory';
+import { ValidatedStockRequest } from '../commands/fetchStock';
+import { StockDataPoint } from '../services/cache/ICache';
+import { FetchPlan, IDataProvider } from './IProvider';
+
 
 export class AlphaVantageProvider implements IDataProvider {
-  public readonly name: ProviderName = 'alphavantage';
+  public readonly name = 'alphavantage';
   private apiKey: string;
 
-  constructor() {
-    this.apiKey = process.env.ALPHAVANTAGE_API_KEY || '';
-    if (!this.apiKey) {
-      throw new Error(`${this.name} API key is not configured.`);
+  constructor(apiKey: string) {
+    if (!apiKey) {
+      throw new Error('Alpha Vantage API key is required.');
     }
+    this.apiKey = apiKey;
   }
 
-  public async getHistory(tickers: string[], startDate: Date, endDate: Date): Promise<OHLCV[]> {
-    console.log(`Fetching data from AlphaVantage for ${tickers.join(', ')}...`);
-    
-    const url = `https://example.com/AAPL/...&apiKey=${this.apiKey}`;
-    const response = await axios.get(url);
-
-    const normalizedData: OHLCV[] = this.normalizeData(response.data, 'symbol_history');
-
-    return normalizedData;
-  }
-  
-  private normalizeData(alphavantageResponse: unknown, responseType: 'symbol_history'): OHLCV[] {
-    // ...logic to transform data here
+  async getHistory(request: ValidatedStockRequest): Promise<StockDataPoint[]> {
+    console.log(`(Provider) [TODO] Fetching data from Alpha Vantage for ${request.tickers.join(', ')}.`);
+    // TODO: Implement the logic to call Alpha Vantage API.
+    // - Handle "compact" vs "full" endpoints.
+    // - Handle monthly chunks for intraday data.
+    // - Transform the API response into the standardized StockDataPoint[] format.
     return [];
+  }
+
+  async planFetch(request: ValidatedStockRequest): Promise<FetchPlan> {
+    console.log('(Provider) [TODO] Planning fetch for Alpha Vantage.');
+    // TODO: Implement logic to calculate API calls.
+    // - For daily/weekly/monthly, it's likely 1 call per ticker for the "full" dataset.
+    // - For intraday, calculate how many months the date range spans.
+    const estimatedApiCallCount = request.tickers.length; // Simplified placeholder
+    return { estimatedApiCallCount };
   }
 }

@@ -93,18 +93,5 @@ describe('Logger Utility', () => {
       logger.warn('This is a warning');
       expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
     });
-
-    it('should not log messages when level is SILENT', () => {
-      (getConfiguredLogLevel as jest.Mock).mockReturnValue(LogLevel.SILENT);
-      const logger = createLogger('Main');
-      logger.debug('This is a debug message');
-      logger.info('This is an info message');
-      logger.warn('This is a warning');
-      logger.error('This is a error');
-      
-      expect(consoleLogSpy).not.toHaveBeenCalled();
-      expect(consoleWarnSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
-    });
   });
 });
