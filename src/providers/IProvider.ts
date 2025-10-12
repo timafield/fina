@@ -1,5 +1,5 @@
-import { ValidatedStockRequest } from '../commands/fetchStock';
-import { StockDataPoint } from '../services/cache/ICache';
+import { ValidatedStockRequest } from '../commands/fetchStock.js';
+import { StorageSecurityBar } from '../services/cache/ICache.js';
 
 /**
  * An object that describes the provider's plan for fulfilling a fetch request.
@@ -7,7 +7,10 @@ import { StockDataPoint } from '../services/cache/ICache';
  */
 export interface FetchPlan {
   estimatedApiCallCount: number;
+  estimatedTime: number;
 }
+
+export class MissingFeatureError extends Error {}
 
 /**
  * Defines the contract for any data provider implementation (e.g., Alpha Vantage, Polygon).
@@ -23,7 +26,7 @@ export interface IDataProvider {
    * @param request - The validated user request.
    * @returns A promise that resolves to an array of standardized stock data points.
    */
-  getHistory(request: ValidatedStockRequest): Promise<StockDataPoint[]>;
+  getHistory(request: ValidatedStockRequest): Promise<StorageSecurityBar[]>;
 
   /**
    * Analyzes a user request and returns a plan for how it would be executed,

@@ -1,23 +1,28 @@
-import { getLogLevelFromString, LogLevel } from './logger';
+import { getLogLevelFromString, LogLevel } from './logger.js';
 
 import { cosmiconfig, CosmiconfigResult } from 'cosmiconfig';
-import yaml from 'yaml';
 import path from 'path';
 import os from 'os';
+import { existsSync } from 'fs';
 
 export interface AppConfig {
   defaults?: {
     provider?: string;
-    output?: string;
+    outputFormat?: string;
+    outputPath?: string;
   };
   providers?: {
     [key: string]: {
       apiKey?: string;
+      rateLimitPerMinute?: number;
+      capabilities?: string[];
     };
   };
   operations?: {
     [key: string]: {
-      provider: string;
+      defaultProvider?: string;
+      defaultOutputFormat?: string;
+      defaultOutputPath?: string;
     };
   };
   cache?: {
@@ -27,30 +32,7 @@ export interface AppConfig {
   logLevel?: LogLevel;
 }
 
-const yamlLoader = (filepath: string, content: string) => {
-  try {
-    return yaml.parse(content);
-  } catch (error) {
-    throw new Error(`Error parsing YAML file at ${filepath}: ${(error as Error).message}`);
-  }
-};
-
-const explorer = cosmiconfig('fina', {
-  searchPlaces: [
-    'package.json', // looks for "fina" property
-    '~/.finarc',
-    '~/.fina/config',
-    '~/.fina/config.json',
-    '~/.fina/config.yaml',
-    '~/.fina/config.yml',
-    '~/.fina/config.js',
-  ],
-  loaders: {
-    '.yaml': yamlLoader,
-    '.yml': yamlLoader,
-    noExt: yamlLoader,
-  },
-});
+const explorer = cosmiconfig('fina');
 
 let loadedConfig: AppConfig | null = null;
 let hasSearched = false;
@@ -75,6 +57,8 @@ export async function loadConfiguration(
     let result: CosmiconfigResult;
     if (options?.config) {
       result = await explorer.load(options.config);
+    } else if (existsSync(os.homedir() + '/.fina/config.yml')) {
+      result = await explorer.load(os.homedir() + '/.fina/config.yml');
     } else {
       result = await explorer.search();
     }

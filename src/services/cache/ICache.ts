@@ -1,19 +1,22 @@
 import { Dayjs } from 'dayjs';
-import { ValidatedStockRequest } from '../../commands/fetchStock';
+import { ValidatedStockRequest } from '../../commands/fetchStock.js';
 
 /**
  * Defines the standardized structure for a single historical stock data point.
  * All providers must return data in this format, and it will be stored this way in the cache.
  */
-export interface StockDataPoint {
+export interface StorageSecurityBar {
   ticker: string;
-  date: string;
+  interval: string;
+  datetime: string;
   open: number;
   high: number;
   low: number;
   close: number;
   volume: number;
   adjClose?: number;
+  splitCoefficient?: number;
+  dividendAmount?: number;
 }
 
 /**
@@ -43,7 +46,7 @@ export interface ICacheService {
    * @param request - The validated user request.
    * @returns A promise that resolves to an array of cached data points.
    */
-  getStockData(request: ValidatedStockRequest): Promise<StockDataPoint[]>;
+  getStockData(request: ValidatedStockRequest): Promise<StorageSecurityBar[]>;
 
   /**
    * Writes an array of new data points to the cache.
@@ -51,7 +54,7 @@ export interface ICacheService {
    * @param dataPoints - The new data points to be stored.
    * @returns A promise that resolves when the operation is complete.
    */
-  updateStockData(dataPoints: StockDataPoint[]): Promise<void>;
+  updateStockData(dataPoints: StorageSecurityBar[]): Promise<void>;
 
   /**
    * Analyzes the cache to determine which portions of a request are already stored

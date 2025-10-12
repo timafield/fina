@@ -1,24 +1,16 @@
 # Fina CLI Configuration File
 # ---------------------------
 # This is an example configuration file for the Fina CLI.
-# You can place this file at ~/.fina/config.yml (Linux/macOS)
-# or ~/.finarc in your home directory.
-# The full list of locations respected are:
-# 1. -C or --config argument provided to command (relative path)
-# 2. "fina" property in package.json in current directory.
-# 3. ~/.finarc
-# 4. ~/.fina/config
-# 5. ~/.fina/config.json
-# 6. ~/.fina/config.yaml
-# 7. ~/.fina/config.yml
-# 8. ~/.fina/config.js
+# The default location is ~/.fina/config.yml but can be overridden with -C or --config.
+# Other locations and formats supported are outlined here https://github.com/cosmiconfig/cosmiconfig?tab=readme-ov-file#searchplaces
 
 # --- Defaults ---
 # Set the default provider and output format to be used when no command-line
 # flags are specified. This is great for setting your personal preference.
 defaults:
   provider: "alphavantage"
-  output: "csv"
+  outputFormat: "csv"
+  outputPath: 'data/$ticker$-$date$.csv'
 
 # --- Providers ---
 # This is where you configure your API keys and provider-specific settings.
@@ -32,9 +24,17 @@ providers:
     # The free tier is 5. Premium tiers are much higher (e.g., 4500 for 75/sec).
     rateLimitPerMinute: 5
 
+    # List of capabilities. If null or empty assumed free tier.
+    capabilities:
+      - premium
+
   polygon:
     # Example configuration for a future Polygon.io provider.
     apiKey: "YOUR_POLYGON_API_KEY_HERE"
+
+    # The number of API calls allowed per minute.
+    # The free tier is 5. Premium tiers are much higher (e.g., 4500 for 75/sec).
+    rateLimitPerMinute: 5
 
 # --- Cache & Database ---
 # Customize the location and type of your local cache.

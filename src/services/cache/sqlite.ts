@@ -1,10 +1,10 @@
-import { ICacheService, CacheCoverage, DateRange, StockDataPoint } from './ICache';
-import { ValidatedStockRequest } from '../../commands/fetchStock';
-import { AppConfig } from '../../utils/config';
+import { ICacheService, CacheCoverage, DateRange, StorageSecurityBar } from './ICache.js';
+import { ValidatedStockRequest } from '../../commands/fetchStock.js';
+import { AppConfig } from '../../utils/config.js';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { createLogger, Logger } from '../../utils/logger';
+import { createLogger, Logger } from '../../utils/logger.js';
 
 interface Migration {
   name: string;
@@ -19,19 +19,22 @@ const MIGRATIONS: Migration[] = [
   {
     name: '001-initial-schema.sql',
     sql: `
-      CREATE TABLE stock_data (
+      CREATE TABLE security_bars (
         ticker TEXT NOT NULL,
-        date TEXT NOT NULL,
+        interval TEXT NOT NULL,
+        datetime TEXT NOT NULL,
         open REAL NOT NULL,
         high REAL NOT NULL,
         low REAL NOT NULL,
         close REAL NOT NULL,
         volume INTEGER NOT NULL,
         adjClose REAL,
-        PRIMARY KEY (ticker, date)
+        splitCoefficient REAL,
+        dividendAmount REAL,
+        PRIMARY KEY (ticker, date, period)
       );
 
-      CREATE INDEX idx_stock_data_ticker_date ON stock_data (ticker, date);
+      CREATE INDEX idx_stock_data_ticker_period_date ON stock_data (ticker, period, datetime);
     `,
   },
 ];
@@ -51,8 +54,8 @@ export class SqliteCacheService implements ICacheService {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    this.db = new Database(dbPath, { verbose: console.log });
-    this.logger.debug(`(Cache) Connected to SQLite database at: ${dbPath}`);
+    this.db = new Database(dbPath, { verbose: (message: unknown) => this.logger.debug(message as string) });
+    this.logger.debug(`Connected to SQLite database at: ${dbPath}`);
     this.runMigrations();
   }
 
@@ -61,7 +64,7 @@ export class SqliteCacheService implements ICacheService {
    * This is a self-contained implementation with no external dependencies.
    */
   private runMigrations(): void {
-    this.logger.debug('(Cache) Checking for and applying database migrations...');
+    this.logger.debug('Checking for and applying database migrations...');
 
     // 1. Create the migrations table if it doesn't exist
     this.db.exec(`
@@ -101,7 +104,7 @@ export class SqliteCacheService implements ICacheService {
   /**
    * Retrieves stock data from the cache for a given request.
    */
-  async getStockData(request: ValidatedStockRequest): Promise<StockDataPoint[]> {
+  async getStockData(request: ValidatedStockRequest): Promise<StorageSecurityBar[]> {
     const sql = `
       SELECT * FROM stock_data
       WHERE ticker IN (${request.tickers.map(() => '?').join(', ')})
@@ -116,13 +119,13 @@ export class SqliteCacheService implements ICacheService {
     ];
     
     const stmt = this.db.prepare(sql);
-    return stmt.all(params) as StockDataPoint[];
+    return stmt.all(params) as StorageSecurityBar[];
   }
 
   /**
    * Writes new data points to the cache using an efficient UPSERT operation.
    */
-  async updateStockData(dataPoints: StockDataPoint[]): Promise<void> {
+  async updateStockData(dataPoints: StorageSecurityBar[]): Promise<void> {
     if (dataPoints.length === 0) return;
 
     const insertSql = `
@@ -145,6 +148,8 @@ export class SqliteCacheService implements ICacheService {
    */
   async analyzeCacheCoverage(request: ValidatedStockRequest): Promise<CacheCoverage> {
     const missingRangesByTicker = new Map<string, DateRange[]>();
+
+    // TODO: more than date range need to look at flags, are we requesting adjusted/dividends but we don't have it in the cache yet?
 
     const sql = `SELECT date FROM stock_data WHERE ticker = ? AND date >= ? AND date <= ? ORDER BY date ASC;`;
     const stmt = this.db.prepare(sql);
