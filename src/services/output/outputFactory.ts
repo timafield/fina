@@ -1,6 +1,6 @@
-import { ConsoleJsonOutput } from './consoleJson';
-import { CsvOutput } from './csv';
-import { IOutput } from './IOutput';
+import { ConsoleJsonOutput } from './consoleJson.js';
+import { CsvOutput } from './csv.js';
+import { IOutput } from './IOutput.js';
 
 export class OutputFactory {
   /**

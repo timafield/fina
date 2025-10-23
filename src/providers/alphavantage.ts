@@ -1,5 +1,5 @@
 import { IDataProvider, FetchPlan, MissingFeatureError } from './IProvider.js';
-import { ValidatedStockRequest } from '../commands/fetchStock.js';
+import { ValidatedSecurityRequest } from '../commands/fetchSecurity.js';
 import { StorageSecurityBar } from '../services/cache/ICache.js';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -40,18 +40,18 @@ export class AlphaVantageProvider implements IDataProvider {
     this.logger.debug(`Alpha Vantage key is ${this.isPremium ? 'premium' : 'free'}. Rate limit configured to ${rateLimitPerMinute} calls/min.`);
   }
 
-  async planFetch(request: ValidatedStockRequest): Promise<FetchPlan> {
+  async planFetch(request: ValidatedSecurityRequest): Promise<FetchPlan> {
     // TODO: This could be enhanced to calculate number of api calls needed when intraday and spans months.
     const estimatedApiCallCount = request.tickers.length;
     // TODO: implement estimated time based on calculated number of calls and calls per minute rate limit.
     return { estimatedApiCallCount, estimatedTime: 0 };
   }
 
-  async getHistory(request: ValidatedStockRequest): Promise<StorageSecurityBar[]> {
+  async getHistory(request: ValidatedSecurityRequest): Promise<StorageSecurityBar[]> {
     let allData: StorageSecurityBar[] = [];
-    const { unadjusted } = request;
+    const { fields } = request;
 
-    const wantsAdjusted = !unadjusted;
+    const wantsAdjusted = fields.some(f => ['a', 'd', 'r'].includes(f));
     if (wantsAdjusted && !this.isPremium) {
       const { proceed } = await inquirer.prompt([{
         type: 'confirm',
@@ -75,7 +75,7 @@ Continue with unadjusted data?`,
 
       this.logger.debug(`Fetching data for ${ticker} from Alpha Vantage...`);
 
-      const granularityInfo = this.getGranularityInfo(request.granularity, unadjusted);
+      const granularityInfo = this.getGranularityInfo(request.granularity, !wantsAdjusted);
 
       const params = {
         function: granularityInfo.apiFunction,

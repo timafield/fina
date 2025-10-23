@@ -1,4 +1,15 @@
-import { StockDataPoint } from '../cache/ICache';
+import { StorageSecurityBar } from '../cache/ICache.js';
+
+/**
+ * Defines the standardized structure for a single historical security data point.
+ * All providers must return data in this format, and it will be stored this way in the cache.
+ */
+export interface OutputSecurityBar extends Partial<StorageSecurityBar> {
+  open_return?: number;
+  high_return?: number;
+  low_return?: number;
+  close_return?: number;
+}
 
 /**
  * Defines the options that can be passed to an output service's write method.
@@ -25,5 +36,5 @@ export interface IOutput {
    * @param options - An object containing options like the output path.
    * @returns A promise that resolves when the write operation is complete.
    */
-  write(data: StockDataPoint[], options: OutputOptions): Promise<void>;
+  write(data: StorageSecurityBar[], options: OutputOptions): Promise<void>;
 }

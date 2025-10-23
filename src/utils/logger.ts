@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import dayjs from 'dayjs';
-import { fetchCachedConfig } from './config';
+import { fetchCachedConfig } from './config.js';
 
 export enum LogLevel {
   DEBUG = 0,

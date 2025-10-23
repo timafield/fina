@@ -32,12 +32,12 @@ npm install -g fina-cli
 
 Get a feel for the power of Fina in seconds.
 
-### 1. Getting Stock History
+### 1. Getting Security History
 
 Let's get the last year of daily data for Apple and Tesla, and save each as a Parquet file.
 
 ```bash
-fina fetch stock -t AAPL TSLA -d -1y:0d -of parquet --op "$ticker$-1y.parquet"
+fina fetch security -t AAPL TSLA -d -1y:0d -of parquet --op "$ticker$-1y.parquet"
 ```
 
 > This command will create `AAPL-1y.parquet` and `TSLA-1y.parquet` in your current directory.

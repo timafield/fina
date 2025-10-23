@@ -1,5 +1,5 @@
-import { StockDataPoint } from '../cache/ICache';
-import { IOutput, OutputOptions } from './IOutput';
+import { StorageSecurityBar } from '../cache/ICache.js';
+import { IOutput, OutputOptions } from './IOutput.js';
 
 /**
  * An implementation of IOutput that prints formatted JSON to the console.
@@ -8,7 +8,7 @@ import { IOutput, OutputOptions } from './IOutput';
 export class ConsoleJsonOutput implements IOutput {
   public readonly name = 'json';
 
-  async write(data: StockDataPoint[], _options: OutputOptions): Promise<void> {
+  async write(data: StorageSecurityBar[], _options: OutputOptions): Promise<void> {
     console.log(JSON.stringify(data, null, 2));
     return Promise.resolve();
   }

@@ -1,4 +1,4 @@
-import { loadConfiguration } from '../utils/config';
+import { loadConfiguration } from '../utils/config.js';
 
 export async function setupCommand(
     options: {

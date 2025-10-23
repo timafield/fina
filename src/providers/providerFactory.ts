@@ -1,6 +1,6 @@
-import { AppConfig } from '../utils/config';
-import { AlphaVantageProvider } from './alphavantage';
-import { IDataProvider } from './IProvider';
+import { AppConfig } from '../utils/config.js';
+import { AlphaVantageProvider } from './alphavantage.js';
+import { IDataProvider } from './IProvider.js';
 
 export class ProviderFactory {
   /**
@@ -12,7 +12,7 @@ export class ProviderFactory {
   public static create(providerName: string, config: AppConfig | null): IDataProvider {
     switch (providerName.toLowerCase()) {
       case 'alphavantage': {
-        const apiKey = config?.providers?.alphaVantage?.apiKey || process.env.ALPHAVANTAGE_API_KEY;
+        const apiKey = config?.providers?.alphavantage?.apiKey || process.env.ALPHAVANTAGE_API_KEY;
         if (!apiKey) {
           throw new Error('Alpha Vantage API key not found in config file or environment variables.');
         }

@@ -1,6 +1,6 @@
-import { ICacheService } from './ICache';
-import { AppConfig } from '../../utils/config';
-import { SqliteCacheService } from './sqlite';
+import { ICacheService } from './ICache.js';
+import { AppConfig } from '../../utils/config.js';
+import { SqliteCacheService } from './sqlite.js';
 
 export class CacheFactory {
   private static instance: ICacheService | null = null;

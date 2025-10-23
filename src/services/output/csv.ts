@@ -1,15 +1,15 @@
-import { IOutput, OutputOptions } from './IOutput';
-import { StockDataPoint } from '../cache/ICache';
+import { IOutput, OutputOptions } from './IOutput.js';
+import { StorageSecurityBar } from '../cache/ICache.js';
 import { Parser } from 'json2csv';
 import fs from 'fs/promises';
 import path from 'path';
 import dayjs from 'dayjs';
-import { createLogger } from '../../utils/logger';
+import { createLogger } from '../../utils/logger.js';
 
 export class CsvOutput implements IOutput {
   public readonly name = 'csv';
 
-  async write(data: StockDataPoint[], options: OutputOptions): Promise<void> {
+  async write(data: StorageSecurityBar[], options: OutputOptions): Promise<void> {
     const logger = createLogger('csv output');
 
     if (!options.path) {
@@ -32,7 +32,7 @@ export class CsvOutput implements IOutput {
     await fs.writeFile(resolvedPath, csv);
   }
 
-  private resolvePath(templatePath: string, data: StockDataPoint[]): string {
+  private resolvePath(templatePath: string, data: StorageSecurityBar[]): string {
     const ticker = data.length > 0 ? data[0].ticker : 'data';
     const date = dayjs().format('YYYY-MM-DD');
     const timestamp = dayjs().format('YYYYMMDDTHHmmss');

@@ -1,4 +1,4 @@
-import { ValidatedStockRequest } from '../commands/fetchStock.js';
+import { ValidatedSecurityRequest } from '../commands/fetchSecurity.js';
 import { StorageSecurityBar } from '../services/cache/ICache.js';
 
 /**
@@ -20,13 +20,13 @@ export interface IDataProvider {
   readonly name: string;
 
   /**
-   * Fetches historical stock data based on the user's request.
+   * Fetches historical security data based on the user's request.
    * This method is responsible for handling any API-specific logic, like pagination
-   * or converting the API response into the standardized StockDataPoint format.
+   * or converting the API response into the standardized SecurityDataPoint format.
    * @param request - The validated user request.
-   * @returns A promise that resolves to an array of standardized stock data points.
+   * @returns A promise that resolves to an array of standardized security data points.
    */
-  getHistory(request: ValidatedStockRequest): Promise<StorageSecurityBar[]>;
+  getHistory(request: ValidatedSecurityRequest): Promise<StorageSecurityBar[]>;
 
   /**
    * Analyzes a user request and returns a plan for how it would be executed,
@@ -34,5 +34,5 @@ export interface IDataProvider {
    * @param request - The validated user request detailing what data is missing from the cache.
    * @returns A promise that resolves to a FetchPlan object.
    */
-  planFetch(request: ValidatedStockRequest): Promise<FetchPlan>;
+  planFetch(request: ValidatedSecurityRequest): Promise<FetchPlan>;
 }

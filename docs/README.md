@@ -18,7 +18,7 @@ For a quick overview and installation instructions, please see the main [project
 
 ### Commands
 A detailed reference for each primary command.
-* **[fina fetch stock](./commands/fetch-stock.md)**: In-depth guide to fetching historical stock data.
+* **[fina fetch security](./commands/fetch-security.md)**: In-depth guide to fetching historical security data.
 * **[fina fetch options](./commands/fetch-options.md)**: In-depth guide to fetching historical options data.
 
 ### Argument Format Guides

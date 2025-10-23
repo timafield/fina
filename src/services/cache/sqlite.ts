@@ -1,5 +1,5 @@
 import { ICacheService, CacheCoverage, DateRange, StorageSecurityBar } from './ICache.js';
-import { ValidatedStockRequest } from '../../commands/fetchStock.js';
+import { ValidatedSecurityRequest } from '../../commands/fetchSecurity.js';
 import { AppConfig } from '../../utils/config.js';
 import Database from 'better-sqlite3';
 import path from 'path';
@@ -19,7 +19,7 @@ const MIGRATIONS: Migration[] = [
   {
     name: '001-initial-schema.sql',
     sql: `
-      CREATE TABLE security_bars (
+      CREATE TABLE IF NOT EXISTS security_bar (
         ticker TEXT NOT NULL,
         interval TEXT NOT NULL,
         datetime TEXT NOT NULL,
@@ -31,10 +31,10 @@ const MIGRATIONS: Migration[] = [
         adjClose REAL,
         splitCoefficient REAL,
         dividendAmount REAL,
-        PRIMARY KEY (ticker, date, period)
+        PRIMARY KEY (ticker, interval, datetime)
       );
 
-      CREATE INDEX idx_stock_data_ticker_period_date ON stock_data (ticker, period, datetime);
+      CREATE INDEX idx_security_bar_ticker_interval_datetime ON security_bar (ticker, interval, datetime);
     `,
   },
 ];
@@ -92,6 +92,7 @@ export class SqliteCacheService implements ICacheService {
           this.db.prepare('INSERT INTO migrations (name) VALUES (?)').run(migration.name);
         } catch (error) {
           this.logger.error(`❌ Migration failed on: ${migration.name}`);
+          console.error(error);
           throw error;
         }
       }
@@ -102,11 +103,11 @@ export class SqliteCacheService implements ICacheService {
   }
 
   /**
-   * Retrieves stock data from the cache for a given request.
+   * Retrieves security data from the cache for a given request.
    */
-  async getStockData(request: ValidatedStockRequest): Promise<StorageSecurityBar[]> {
+  async getSecurityData(request: ValidatedSecurityRequest): Promise<StorageSecurityBar[]> {
     const sql = `
-      SELECT * FROM stock_data
+      SELECT * FROM security_bar
       WHERE ticker IN (${request.tickers.map(() => '?').join(', ')})
       AND date >= ? AND date <= ?
       ORDER BY date ASC;
@@ -125,12 +126,27 @@ export class SqliteCacheService implements ICacheService {
   /**
    * Writes new data points to the cache using an efficient UPSERT operation.
    */
-  async updateStockData(dataPoints: StorageSecurityBar[]): Promise<void> {
+  async updateSecurityData(dataPoints: StorageSecurityBar[]): Promise<void> {
     if (dataPoints.length === 0) return;
 
+    /**
+     * ticker TEXT NOT NULL,
+        interval TEXT NOT NULL,
+        datetime TEXT NOT NULL,
+        open REAL NOT NULL,
+        high REAL NOT NULL,
+        low REAL NOT NULL,
+        close REAL NOT NULL,
+        volume INTEGER NOT NULL,
+        adjClose REAL,
+        splitCoefficient REAL,
+        dividendAmount REAL,
+        PRIMARY KEY (ticker, interval, datetime)
+     */
+
     const insertSql = `
-      INSERT OR REPLACE INTO stock_data (ticker, date, open, high, low, close, volume, adjClose)
-      VALUES (@ticker, @date, @open, @high, @low, @close, @volume, @adjClose);
+      INSERT OR REPLACE INTO security_bar (ticker, interval, datetime, open, high, low, close, volume, adjClose, splitCoefficient, dividendAmount)
+      VALUES (@ticker, @interval, @datetime, @open, @high, @low, @close, @volume, @adjClose, @splitCoefficient, @dividendAmount);
     `;
     const insertStmt = this.db.prepare(insertSql);
 
@@ -144,19 +160,20 @@ export class SqliteCacheService implements ICacheService {
   }
 
   /**
-   * Analyzes the cache to find which date ranges are missing for each ticker in a given request.
+   * Analyzes the cache to find which datetime ranges are missing for each ticker in a given request.
    */
-  async analyzeCacheCoverage(request: ValidatedStockRequest): Promise<CacheCoverage> {
+  async analyzeCacheCoverage(request: ValidatedSecurityRequest): Promise<CacheCoverage> {
     const missingRangesByTicker = new Map<string, DateRange[]>();
 
-    // TODO: more than date range need to look at flags, are we requesting adjusted/dividends but we don't have it in the cache yet?
+    // TODO: more than datetime range need to look at flags, are we requesting adjusted/dividends but we don't have it in the cache yet?
 
-    const sql = `SELECT date FROM stock_data WHERE ticker = ? AND date >= ? AND date <= ? ORDER BY date ASC;`;
+    const sql = `SELECT datetime FROM security_bar WHERE ticker = ? AND interval = ? AND datetime >= ? AND datetime <= ? ORDER BY datetime ASC;`;
     const stmt = this.db.prepare(sql);
 
     for (const ticker of request.tickers) {
       const params = [
         ticker,
+        request.granularity,
         request.startDate.format('YYYY-MM-DD'),
         request.endDate.format('YYYY-MM-DD'),
       ];

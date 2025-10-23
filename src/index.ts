@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { fetchStockCommand } from './commands/fetchStock';
-import { setupCommand } from './commands/setupCommand';
+import { fetchSecurityCommand } from './commands/fetchSecurity.js';
+import { setupCommand } from './commands/setupCommand.js';
 
 const program = new Command();
 
@@ -17,12 +17,12 @@ program
 const fetchCmd = program.command('fetch')
   .description('Fetch financial data from various sources.');
 
-fetchCmd.command('stock')
-  .description('Fetch historical price data for stocks.')
-  .requiredOption('-t, --ticker <TICKERS...>', 'Stock ticker(s) to fetch')
+fetchCmd.command('security')
+  .description('Fetch historical price data for securities.')
+  .requiredOption('-t, --ticker <TICKERS...>', 'Security ticker(s) to fetch')
   .option('-d, --date <range>', 'Date range for history (e.g., -5y:0d, 2024-01-01:2024-12-31)', '-1d')
-  .option('-g, --granularity <interval>', 'Time interval or granularity (e.g., 1d, 1h, 5m)', '1d')
-  .option('-f, --fields <fields>', 'Data fields to retrieve (o,h,l,c,v,a for adjusted close)', 'ohlcva')
+  .option('-g, --granularity <interval>', 'Time interval or granularity (e.g., d, 1h, 5m)', 'd')
+  .option('-f, --fields <fields>', 'Data fields to retrieve (o,h,l,c,v,a,d)', 'ohlcvad')
   .option('--of, --output-format <format>', 'Output format (csv, parquet, sqlite, gsheet)')
   .option('--op, --output-path <path>', 'Output file path with templates (e.g., /data/$ticker$.csv)')
   .option('--cache-policy <policy>', 'Cache policy (use, ignore, refresh)', 'use')
@@ -30,12 +30,12 @@ fetchCmd.command('stock')
   .option('-y, --yes', 'Automatically answer yes to all prompts')
   .action(async (opts) => {
     await setupCommand(opts);
-    await fetchStockCommand(opts);
+    await fetchSecurityCommand(opts);
   })
   .addHelpText('after', `
 Examples:
-  $ fina fetch stock -t AAPL -d -1y:0d
-  $ fina fetch stock -t TSLA NVDA -g 1h -d -10d:0d --of parquet --op /data/$ticker$.parquet
+  $ fina fetch security -t AAPL -d -1y:0d
+  $ fina fetch security -t TSLA NVDA -g 1h -d -10d:0d --of parquet --op /data/$ticker$.parquet
 
 Date Range Format (--date, -d):
   The date range is specified as '[start]:[end]'. Both ends are optional.
@@ -52,7 +52,7 @@ Date Range Format (--date, -d):
 
 fetchCmd.command('options')
   .description('Fetch historical options chain data for an underlying ticker.')
-  .requiredOption('-t, --ticker <TICKERS...>', 'Underlying stock ticker(s)')
+  .requiredOption('-t, --ticker <TICKERS...>', 'Underlying security ticker(s)')
   .option('-c, --calls', 'Fetch calls only')
   .option('-p, --puts', 'Fetch puts only')
   .option('-s, --strike <expression>', 'Strike filter expression (e.g., "+-10%m", ">=450")')
